@@ -1,0 +1,10 @@
+title: Miramar Labs
+email: aaron@aaroncody.com
+description: ML infrastructure and projects built on the Miramar platform.
+github_username: miramar-labs-org
+linkedin_username: aaron-cody-806130
+theme: minima
+plugins:
+  - jekyll-feed
+url: "https://miramar-labs-org.github.io"
+baseurl: ""
