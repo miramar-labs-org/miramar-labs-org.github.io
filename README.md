@@ -39,33 +39,67 @@ Then open [http://localhost:4001](http://localhost:4001) in your browser.
 
 ### Writing a new post
 
-1. Run the **Create Project** workflow — it auto-opens a draft PR with a stub post on `draft-<project-name>`
-2. On the DGX: `git fetch && git checkout draft-<project-name>`
-3. Jekyll live-reloads — edit `_posts/YYYY-MM-DD-<name>.markdown` and preview at `http://localhost:4001`
-4. Commit and push edits to the draft branch
-5. When ready to publish, merge the PR on GitHub — post goes live in ~60s
-6. Switch Jekyll back to main: `git checkout main`
+**Step 1 — Create the project** *(you are on `main` in the blog repo)*
 
-### Publishing from VS Code
+Run the **Create Project** workflow. It automatically:
+- Creates the project repo under `miramar-labs-org`
+- Opens a draft PR on this blog repo with a stub post on `draft-<project-name>`
+- Checks out `draft-<project-name>` on the DGX so Jekyll picks it up immediately
 
-VS Code can handle the entire publish flow without touching the terminal:
+**Step 2 — Edit the post** *(you are on `draft-<project-name>` in the blog repo on the DGX)*
 
-1. **Stage & commit** — Source Control tab (left sidebar) → stage the post file → write a commit message → click **Commit**
-2. **Push** — click the sync button in the bottom status bar or in the Source Control tab
-3. **Merge the PR** — install the [GitHub Pull Requests](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-pull-request-github) extension → use the PR panel in the sidebar to review and merge without leaving VS Code
+Open `_posts/YYYY-MM-DD-<project-name>.markdown` in VS Code (via SSH remote or JupyterLab). Every save live-reloads at [http://localhost:4001](http://localhost:4001). Write freely — nothing is public yet.
+
+**Step 3 — Save your progress** *(you are on `draft-<project-name>`)*
+
+Commit and push to keep your work backed up on GitHub:
+
+```sh
+git add _posts/YYYY-MM-DD-<project-name>.markdown
+git commit -m "draft: update clinical-ft-pipeline post"
+git push
+```
+
+Or use VS Code's Source Control tab: stage the file → write a commit message → click **Commit** → click the sync button.
+
+**Step 4 — Publish** *(you are on `draft-<project-name>`)*
+
+When the post is ready to go live:
+
+- Open the draft PR on GitHub (`github.com/miramar-labs-org/miramar-labs-org.github.io/pulls`)
+- Merge it — GitHub Pages rebuilds in ~60s and the post is public at `miramar-labs-org.github.io`
+
+Or use the [GitHub Pull Requests](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-pull-request-github) VS Code extension to merge without leaving the editor.
+
+**Step 5 — Switch back** *(you are on `draft-<project-name>` on the DGX)*
+
+Return Jekyll to serving the live site:
+
+```sh
+git checkout main && git pull
+```
+
+---
 
 ### Editing a live post
 
-1. `git checkout main && git pull`
-2. Edit the post file, commit, push on a new branch, open a PR
-3. Merge the PR — Pages rebuilds in ~60s
+*(You are on `main` in the blog repo)*
+
+1. Create a new branch: `git checkout -b edit/<post-name>`
+2. Edit `_posts/YYYY-MM-DD-<post-name>.markdown` — preview at [http://localhost:4001](http://localhost:4001)
+3. Commit, push, open a PR, merge — Pages rebuilds in ~60s
+
+---
 
 ### Multiple drafts
 
-Jekyll serves whichever branch is checked out on the DGX. Switch branches to preview a different draft:
+*(You are on one draft branch on the DGX; you want to preview a different one)*
+
+Jekyll serves whatever branch is checked out on the DGX. Switch to preview another draft:
 
 ```sh
-git checkout draft-<other-project>
-# preview at http://localhost:4001
-git checkout main  # or draft-<current> when done
+# currently on draft-project-a
+git checkout draft-project-b
+# preview at http://localhost:4001 — now shows project-b's draft
+git checkout draft-project-a  # switch back when done
 ```
