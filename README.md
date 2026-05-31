@@ -46,6 +46,14 @@ Then open [http://localhost:4001](http://localhost:4001) in your browser.
 5. When ready to publish, merge the PR on GitHub — post goes live in ~60s
 6. Switch Jekyll back to main: `git checkout main`
 
+### Publishing from VS Code
+
+VS Code can handle the entire publish flow without touching the terminal:
+
+1. **Stage & commit** — Source Control tab (left sidebar) → stage the post file → write a commit message → click **Commit**
+2. **Push** — click the sync button in the bottom status bar or in the Source Control tab
+3. **Merge the PR** — install the [GitHub Pull Requests](https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-pull-request-github) extension → use the PR panel in the sidebar to review and merge without leaving VS Code
+
 ### Editing a live post
 
 1. `git checkout main && git pull`
