@@ -1,0 +1,33 @@
+---
+layout: post
+title: "Test"
+date: 2026-06-01
+categories: miramar ml project
+---
+
+test project
+
+**Platform:** DGX Spark via [Miramar Platform](https://miramar-labs-org.github.io/miramar-platform-gcp/)
+**Repo:** [miramar-labs-org/test](https://github.com/miramar-labs-org/test)
+
+## Overview
+
+<!-- TODO: problem, approach, why -->
+
+## Approach
+
+<!-- TODO: model, techniques, libraries -->
+
+## Dataset
+
+<!-- TODO: source, size, preprocessing -->
+
+## Results
+
+| Metric | Value |
+|--------|-------|
+| <!-- TODO --> | |
+
+## Next steps
+
+<!-- TODO -->
