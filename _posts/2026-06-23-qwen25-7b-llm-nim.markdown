@@ -1,0 +1,36 @@
+---
+layout: post
+title: "Qwen25 7b Llm Nim"
+date: 2026-06-23
+categories: miramar nim serving dgx local-nim
+---
+
+Qwen2.5-7B-Instruct served via Multi-LLM NIM runtime
+
+**Platform:** [Miramar Platform](https://miramar-labs-org.github.io/miramar-platform-gcp/)
+**Repo:** [miramar-labs-org/qwen25-7b-llm-nim](https://github.com/miramar-labs-org/qwen25-7b-llm-nim)
+
+## Serving stack
+
+| | |
+|---|---|
+| Local model | `<!-- TODO: model path -->` |
+| Runtime | NVIDIA Multi-LLM NIM (`nvcr.io/nim/nvidia/llm-nim`) |
+| Host | DGX Spark (GB10 Blackwell) |
+| Served as | `<!-- TODO: served_model_name -->` |
+
+## Deployment
+
+```bash
+curl http://localhost:8000/v1/models
+curl -X POST http://localhost:8000/v1/chat/completions \\
+  -d '{"model":"<!-- TODO -->","messages":[{"role":"user","content":"..."}]}'
+```
+
+## Smoke test results
+
+<!-- TODO: sample prompts and responses -->
+
+## Next steps
+
+<!-- TODO -->
