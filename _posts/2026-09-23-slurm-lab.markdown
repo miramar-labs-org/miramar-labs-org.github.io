@@ -1,33 +1,73 @@
 ---
 layout: post
-title: "Slurm Lab"
+title: "Slurm Lab: a two-node GPU cluster from a DGX Spark and a Jetson Orin"
 date: 2026-09-23
 categories: miramar ml project
 ---
 
 Learn Slurm in a day: DGX Spark + AGX Orin as a 2-node GPU cluster running a distributed PyTorch job
 
-**Platform:** DGX Spark via [Miramar Platform](https://miramar-labs-org.github.io/miramar-platform-gcp/)
-**Repo:** [miramar-labs-org/slurm-lab](https://github.com/miramar-labs-org/slurm-lab)
+**Platform:** DGX Spark + AGX Orin via [Miramar Platform](https://miramar-labs-org.github.io/miramar-platform-gcp/)
+**Repo:** [miramar-labs-org/slurm-lab](https://github.com/miramar-labs-org/slurm-lab) ·
+**Full tutorial:** [Learning Slurm on a Two-Node Home Cluster](https://github.com/miramar-labs-org/slurm-lab/blob/main/docs/learning-slurm.md)
 
 ## Overview
 
-<!-- TODO: problem, approach, why -->
+Slurm schedules most of the world's supercomputers, and the only way to really learn it is to build a cluster.
+I didn't have a rack, so I used what was on the desk: an NVIDIA **DGX Spark** (GB10, 128 GB unified) and a
+**Jetson AGX Orin** (64 GB unified), connected by nothing better than home WiFi.
+
+Two very different GPUs on a slow link make a bad training cluster, and that turned out to be the point.
+Real clusters quietly provide identical nodes, a directory service, a shared filesystem and a fast
+interconnect. I had to supply every one of those by hand, and each gap turned into a lesson.
 
 ## Approach
 
-<!-- TODO: model, techniques, libraries -->
+- **Slurm 23.11** from Ubuntu apt. `slurmctld` runs on the DGX, `slurmd` on both nodes, with munge auth, `cons_tres`,
+  cgroup process tracking, and GPUs declared as typed GRES (`gpu:gb10`, `gpu:orin`). There's no accounting database.
+- **Same world on both nodes:** the Orin's uid was renumbered to match the DGX (Slurm ships jobs by *number*),
+  hosts are pinned by IP, a shared filesystem holds the only working copy of the repo, and the Python env sits at the same path on both nodes.
+- **Exercises:** env and task layout, `squeue`/`scancel`, GPU-type targeting, job arrays, dependency
+  pipelines, draining nodes.
+- **Capstone:** PyTorch DDP across both nodes, launched by `srun torchrun`, with checkpointing and a mid-run
+  `scontrol requeue` that resumes from the last checkpoint.
 
 ## Dataset
 
-<!-- TODO: source, size, preprocessing -->
+[tiny-shakespeare](https://github.com/karpathy/char-rnn) (1.1 MB of public-domain text, 65 characters),
+used to train a 0.83M-parameter char-level GPT. The model is deliberately tiny. Gradients have to cross WiFi every step.
 
 ## Results
 
 | Metric | Value |
 |--------|-------|
-| <!-- TODO --> | |
+| Cluster | 2 nodes, 2 GPUs (GB10 sm_121 + Orin sm_87), 32 CPUs |
+| Collective backend | **gloo**. NCCL can't initialize on Jetson (see below). |
+| gloo all-reduce, 16 MiB over WiFi | ~2.5 s/iter (~6.3 MiB/s bus bandwidth) |
+| DDP step time, 2 nodes | ~450 ms |
+| Compute-only step time | ~17 ms (DGX), ~45 ms (Orin) |
+| Share of each step spent communicating | ~90% |
+| 300 steps, with a requeue at step 80 | resumed from the step-75 checkpoint, val loss 2.11 |
+
+The things that actually broke, and why:
+
+1. **NCCL won't start on the Orin.** Jetson's NVML returns `NOT_SUPPORTED` for `nvmlDeviceGetP2PStatus`,
+   even for a GPU paired with itself, and NCCL treats any failure there as fatal before it even picks a transport.
+   No environment variable gets around it, in any NCCL version up to 2.32. gloo works fine.
+2. **Slurm ignored the Orin's GPU.** 23.11 drops a GPU declared without a device file, and the Orin's GPU
+   isn't `/dev/nvidia0`. Listing the file descriptors a CUDA process holds showed the real one: `/dev/nvgpu/igpu0/ctrl`.
+3. **CUDA worked over ssh but not under Slurm.** The controller sent the job its *own* numeric group
+   list, which on the Orin lacked `video`, needed for `/dev/nvmap`. Fixed with `LaunchParameters=disable_send_gids`.
+4. **Every job waited up to 30 s with `InvalidAccount`.** With no accounting database, 23.11's main scheduler
+   fails an association check that the backfill scheduler skips. Fixed by running backfill every 2 s.
+5. **DDP hung at startup.** Whichever node wins rank 0 advertises its hostname, and the DGX resolves its own name to `127.0.0.1`.
+   Fixed with `torchrun --local-addr=<LAN IP>`.
+
+Three of those five come down to one theme: **anything identified by a number or a name has to mean the same thing
+on every node.** Uids, gids and hostnames were the recurring source of trouble.
 
 ## Next steps
 
-<!-- TODO -->
+- `slurmdbd` + MariaDB for `sacct` job history, and the proper fix for `InvalidAccount`.
+- `ConstrainDevices=yes`, so jobs can only open their allocated GPUs.
+- A small NVML shim on the Orin to get NCCL running, mostly out of curiosity. Over WiFi the link is the bottleneck either way.
